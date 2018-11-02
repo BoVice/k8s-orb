@@ -1,0 +1,41 @@
+# Orb 'sandbox/k8s@dev:0.1' resolved to 'sandbox/k8s@dev:0.1'
+version: 2
+jobs:
+  k8s/deploy:
+    docker:
+    - image: circleci/node:10
+    steps:
+    - run:
+        name: installing kubernetes
+        command: |
+          sudo apt-get update && sudo apt-get install -y apt-transport-https
+          curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+          echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+          sudo apt-get update
+          echo "installing kubelet, kubeadm, kubectl"
+          sudo apt-get install -y kubectl
+    - run:
+        name: setting kubernetes config
+        command: |
+          export K8S_CONFIG_FILE="k8s-config/config.yml"
+          export K8S_DEPLOY_FILE="k8s-config/deployment.yml"
+          export K8S_CONTEXT="dev-frontend"
+          sudo kubectl config --kubeconfig=$K8S_CONFIG_FILE use-context $K8S_CONTEXT
+    - run:
+        name: setting image
+        command: |
+          sudo kubectl set image -f $K8S_DEPLOY_FILE nginx=nginx:1.9.1 --local -o yaml
+workflows:
+  deploy:
+    jobs:
+    - k8s/deploy
+  version: 2
+
+# Original config.yml file:
+# version: 2.1
+# orbs:
+#   k8s: sandbox/k8s@dev:0.1
+# workflows:
+#   deploy:
+#     jobs:
+#       - k8s/deploy
